@@ -13,10 +13,7 @@ export default function RootLayout({ children }) {
         className="min-h-screen antialiased"
         style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-navy)' }}
       >
-        {/* Navbar global — visible en todas las páginas */}
         <Navbar />
-
-        {/* Contenido de cada página */}
         {children}
       </body>
     </html>

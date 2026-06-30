@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { AlertTriangle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 const INITIAL_FORM   = { email: '', password: '' };
 const INITIAL_ERRORS = { email: '', password: '', general: '' };
@@ -22,13 +23,6 @@ function validate({ email, password }) {
   return { errors, isValid };
 }
 
-/**
- * FormularioLogin
- *
- * Llama a supabase.auth.signInWithPassword().
- * En caso de éxito, redirige a /dashboard.
- * Maneja todos los errores conocidos de Supabase Auth sin exponer mensajes internos.
- */
 export default function FormularioLogin() {
   const router = useRouter();
 
@@ -59,7 +53,6 @@ export default function FormularioLogin() {
       });
 
       if (error) {
-        // Supabase devuelve "Invalid login credentials" para email o password incorrecto
         const isCredential = error.message?.toLowerCase().includes('invalid login');
         const isEmail      = error.message?.toLowerCase().includes('email not confirmed');
 
@@ -75,7 +68,6 @@ export default function FormularioLogin() {
         return;
       }
 
-      // Éxito → redirigir al dashboard
       setStatus('success');
       router.push('/dashboard');
 
@@ -98,7 +90,6 @@ export default function FormularioLogin() {
       className="card w-full max-w-md"
       aria-label="Formulario de inicio de sesión"
     >
-      {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-navy)' }}>
           Iniciar sesión
@@ -108,24 +99,22 @@ export default function FormularioLogin() {
         </p>
       </div>
 
-      {/* Alerta general */}
       {errors.general && (
         <div role="alert" className="mb-4 px-4 py-3 rounded-lg text-sm flex items-start gap-2"
           style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)' }}>
-          <span aria-hidden="true">⚠️</span>
+          <AlertTriangle size={18} aria-hidden="true" className="flex-shrink-0" />
           <span>{errors.general}</span>
         </div>
       )}
       {isSuccess && (
         <div role="status" className="mb-4 px-4 py-3 rounded-lg text-sm flex items-start gap-2"
           style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)' }}>
-          <span aria-hidden="true">✅</span>
+          <CheckCircle2 size={18} aria-hidden="true" className="flex-shrink-0" />
           <span>¡Bienvenido! Redirigiendo a tu panel…</span>
         </div>
       )}
 
       <div className="flex flex-col gap-5">
-        {/* Email */}
         <div className="form-group">
           <label htmlFor="login-email" className="form-label">Email</label>
           <input id="login-email" name="email" type="email" autoComplete="email"
@@ -136,7 +125,6 @@ export default function FormularioLogin() {
           {errors.email && <span className="form-error" role="alert">{errors.email}</span>}
         </div>
 
-        {/* Password */}
         <div className="form-group">
           <div className="flex items-center justify-between">
             <label htmlFor="login-password" className="form-label">Contraseña</label>
@@ -154,17 +142,16 @@ export default function FormularioLogin() {
               style={errors.password ? { borderColor: 'var(--color-error)' } : {}} />
             <button type="button" tabIndex={-1}
               onClick={() => setShowPwd((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm flex items-center justify-center"
               style={{ color: 'var(--color-slate-mid)' }}
               aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-              {showPwd ? '🙈' : '👁️'}
+              {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           {errors.password && <span className="form-error" role="alert">{errors.password}</span>}
         </div>
       </div>
 
-      {/* Submit */}
       <div className="mt-8">
         <button type="submit" disabled={isLoading || isSuccess}
           className="btn btn-primary w-full"
@@ -178,7 +165,6 @@ export default function FormularioLogin() {
         </button>
       </div>
 
-      {/* Link a registro */}
       <p className="mt-5 text-center text-xs" style={{ color: 'var(--color-slate-mid)', fontFamily: 'var(--font-body)' }}>
         ¿No tenés cuenta?{' '}
         <Link href="/registro" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>

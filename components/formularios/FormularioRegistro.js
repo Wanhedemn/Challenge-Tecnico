@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-
-// ─── Constantes ───────────────────────────────────────────────────────────────
+import { AlertTriangle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 const GRUPOS_SANGUINEOS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -18,8 +17,6 @@ const INITIAL_FORM = {
 const INITIAL_ERRORS = {
   nombre: '', email: '', password: '', grupo_sanguineo: '', general: '',
 };
-
-// ─── Validación client-side ───────────────────────────────────────────────────
 
 function validate(fields) {
   const errors = { ...INITIAL_ERRORS };
@@ -46,23 +43,12 @@ function validate(fields) {
   return { errors, isValid };
 }
 
-// ─── Componente ───────────────────────────────────────────────────────────────
-
-/**
- * FormularioRegistro
- *
- * Llama a supabase.auth.signUp() con metadatos extra (nombre, grupo_sanguineo).
- * El Trigger `handle_new_user` en la DB copia esos datos a public.usuarios
- * automáticamente → no hay exposición de service_role en el cliente.
- *
- * Flujo: signUp → redirigir a /login (sin autologin).
- */
 export default function FormularioRegistro() {
   const router = useRouter();
 
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState(INITIAL_ERRORS);
-  const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const [status, setStatus] = useState('idle');
   const [showPwd, setShowPwd] = useState(false);
 
   function handleChange(e) {
@@ -85,34 +71,16 @@ export default function FormularioRegistro() {
         email: form.email.trim().toLowerCase(),
         password: form.password,
         options: {
-          // Estos metadatos los lee el Trigger en la DB
           data: {
             nombre: form.nombre.trim(),
             grupo_sanguineo: form.grupo_sanguineo,
           },
-          // Deshabilita el autologin: el usuario debe confirmar el email o
-          // ir directamente al login en entornos sin email confirmation
+          // El usuario debe confirmar el email o ir directamente al login en entornos sin confirmación de email
           emailRedirectTo: `${window.location.origin}/login`,
         },
       });
 
       if (error) {
-        /* Email ya en uso
-        const isDup = error.message?.toLowerCase().includes('already registered');
-        setErrors((prev) => ({
-          ...prev,
-          general: isDup
-            ? 'Este email ya está registrado. ¿Querés iniciar sesión?'
-            : error.message || 'Error al crear la cuenta.',
-        }));
-        setStatus('error');
-        return;*/
-
-        // --- AQUÍ EL LOG PARA DEBUGGING ---
-        console.error("DEBUG: Error completo de Supabase Auth:", error);
-        // ----------------------------------
-
-        // Email ya en uso
         const isDup = error.message?.toLowerCase().includes('already registered');
         setErrors((prev) => ({
           ...prev,
@@ -124,7 +92,6 @@ export default function FormularioRegistro() {
         return;
       }
 
-      // Éxito → redirigir a /login
       setStatus('success');
       setTimeout(() => router.push('/login'), 1500);
 
@@ -147,7 +114,6 @@ export default function FormularioRegistro() {
       className="card w-full max-w-md"
       aria-label="Formulario de registro"
     >
-      {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-navy)' }}>
           Crear cuenta
@@ -157,24 +123,22 @@ export default function FormularioRegistro() {
         </p>
       </div>
 
-      {/* Alerta general */}
       {errors.general && (
         <div role="alert" className="mb-4 px-4 py-3 rounded-lg text-sm flex items-start gap-2"
           style={{ backgroundColor: 'var(--color-error-light)', color: 'var(--color-error)' }}>
-          <span aria-hidden="true">⚠️</span>
+          <AlertTriangle size={18} aria-hidden="true" className="flex-shrink-0" />
           <span>{errors.general}</span>
         </div>
       )}
       {isSuccess && (
         <div role="status" className="mb-4 px-4 py-3 rounded-lg text-sm flex items-start gap-2"
           style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success)' }}>
-          <span aria-hidden="true">✅</span>
+          <CheckCircle2 size={18} aria-hidden="true" className="flex-shrink-0" />
           <span>¡Cuenta creada! Redirigiendo al inicio de sesión…</span>
         </div>
       )}
 
       <div className="flex flex-col gap-5">
-        {/* Nombre */}
         <div className="form-group">
           <label htmlFor="reg-nombre" className="form-label">Nombre completo</label>
           <input id="reg-nombre" name="nombre" type="text" autoComplete="name"
@@ -185,7 +149,6 @@ export default function FormularioRegistro() {
           {errors.nombre && <span className="form-error" role="alert">{errors.nombre}</span>}
         </div>
 
-        {/* Email */}
         <div className="form-group">
           <label htmlFor="reg-email" className="form-label">Email</label>
           <input id="reg-email" name="email" type="email" autoComplete="email"
@@ -196,7 +159,6 @@ export default function FormularioRegistro() {
           {errors.email && <span className="form-error" role="alert">{errors.email}</span>}
         </div>
 
-        {/* Password */}
         <div className="form-group">
           <label htmlFor="reg-password" className="form-label">Contraseña</label>
           <div className="relative">
@@ -208,16 +170,15 @@ export default function FormularioRegistro() {
               style={errors.password ? { borderColor: 'var(--color-error)' } : {}} />
             <button type="button" tabIndex={-1}
               onClick={() => setShowPwd((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm flex items-center justify-center"
               style={{ color: 'var(--color-slate-mid)' }}
               aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-              {showPwd ? '🙈' : '👁️'}
+              {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           {errors.password && <span className="form-error" role="alert">{errors.password}</span>}
         </div>
 
-        {/* Grupo sanguíneo */}
         <div className="form-group">
           <label htmlFor="reg-grupo" className="form-label">Grupo sanguíneo</label>
           <select id="reg-grupo" name="grupo_sanguineo" value={form.grupo_sanguineo}
@@ -231,7 +192,6 @@ export default function FormularioRegistro() {
         </div>
       </div>
 
-      {/* Submit */}
       <div className="mt-8">
         <button type="submit" disabled={isLoading || isSuccess}
           className="btn btn-primary w-full"

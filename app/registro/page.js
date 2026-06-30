@@ -6,12 +6,7 @@ export const metadata = {
   description: 'Creá tu cuenta de donante y empezá a salvar vidas hoy.',
 };
 
-/**
- * RegistroPage — /registro
- *
- * Página pública de registro. Monta el FormularioRegistro centrado
- * sobre un fondo con el gradiente del Design System.
- */
+
 export default function RegistroPage() {
   return (
     <div

@@ -1,10 +1,3 @@
--- =========================================================================
--- DonaVida — Migración: Autenticación con Supabase Auth
--- Ejecutar en Supabase → SQL Editor (en este orden exacto)
--- =========================================================================
-
--- PASO 1: Ajustar public.usuarios para que el id referencie auth.users
--- Nota: Si la tabla ya tiene datos, primero vaciala o adaptá la migración.
 ALTER TABLE public.usuarios
   DROP CONSTRAINT IF EXISTS usuarios_pkey;
 
