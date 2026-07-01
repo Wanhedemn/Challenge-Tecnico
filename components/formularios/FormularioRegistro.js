@@ -67,7 +67,7 @@ export default function FormularioRegistro() {
     setStatus('loading');
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: form.email.trim().toLowerCase(),
         password: form.password,
         options: {
@@ -75,21 +75,39 @@ export default function FormularioRegistro() {
             nombre: form.nombre.trim(),
             grupo_sanguineo: form.grupo_sanguineo,
           },
-          // El usuario debe confirmar el email o ir directamente al login en entornos sin confirmación de email
           emailRedirectTo: `${window.location.origin}/login`,
         },
       });
 
-      if (error) {
-        const isDup = error.message?.toLowerCase().includes('already registered');
+      if (signUpError) {
+        const isDup = signUpError.message?.toLowerCase().includes('already registered');
         setErrors((prev) => ({
           ...prev,
           general: isDup
             ? 'Este email ya está registrado. ¿Querés iniciar sesión?'
-            : error.message || 'Error al crear la cuenta.',
+            : signUpError.message || 'Error al crear la cuenta.',
         }));
         setStatus('error');
         return;
+      }
+
+      // Insertar el perfil en la tabla pública usando el uid recién creado.
+      // Esto es necesario porque el trigger en la base de datos puede no estar configurado.
+      const userId = signUpData?.user?.id;
+      if (userId) {
+        const { error: profileError } = await supabase
+          .from('usuarios')
+          .upsert({
+            id: userId,
+            email: form.email.trim().toLowerCase(),
+            nombre: form.nombre.trim(),
+            grupo_sanguineo: form.grupo_sanguineo,
+          }, { onConflict: 'id' });
+
+        if (profileError) {
+          console.error('[Registro] Error al guardar perfil:', profileError);
+          // No bloqueamos el flujo — la cuenta fue creada exitosamente.
+        }
       }
 
       setStatus('success');
@@ -103,6 +121,7 @@ export default function FormularioRegistro() {
       setStatus('error');
     }
   }
+
 
   const isLoading = status === 'loading';
   const isSuccess = status === 'success';

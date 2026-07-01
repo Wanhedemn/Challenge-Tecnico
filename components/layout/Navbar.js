@@ -20,8 +20,8 @@ export const ICON_COLOR = 'currentColor';
 
 const NAV_LINKS = [
   { label: 'Inicio',     href: '/'            },
-  { label: 'Urgencias',  href: '#urgencias'   },
-  { label: 'Requisitos', href: '#requisitos'  },
+  { label: 'Urgencias',  href: '/#urgencias'  },
+  { label: 'Requisitos', href: '/#requisitos' },
 ];
 
 // ─── Sub-componente: menú de usuario autenticado ──────────────────────────────
@@ -186,7 +186,7 @@ export default function Navbar() {
   async function handleLogout() {
     try {
       await supabase.auth.signOut();
-      router.push('/login');
+      router.push('/');
     } catch (err) {
       console.error('[Navbar] Error al cerrar sesión:', err);
     }

@@ -3,21 +3,7 @@ import Link from 'next/link';
 export default function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(192,21,42,0.10) 0%, transparent 70%), #F8FAFC',
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-32 right-0 w-[600px] h-[600px] rounded-full opacity-[0.04]"
-        style={{ background: 'var(--color-primary)' }}
-      />
-
-      <div className="section flex flex-col items-center text-center py-20 lg:py-28 gap-8">
+      <div className="section flex flex-col items-center text-center py-10 lg:py-16 gap-8">
 
         <div className="badge-active animate-fade-up" style={{ animationDelay: '0ms' }}>
           <span

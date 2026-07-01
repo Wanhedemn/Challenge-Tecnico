@@ -1,5 +1,6 @@
 import './globals.css';
 import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 
 export const metadata = {
   title: 'DonaVida - Plataforma de Donación de Sangre',
@@ -10,11 +11,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <body
-        className="min-h-screen antialiased"
-        style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-navy)' }}
+        className="min-h-screen antialiased flex flex-col bg-white"
+        style={{ color: 'var(--color-navy)' }}
       >
         <Navbar />
-        {children}
+        
+        <main className="flex-grow">
+          {children}
+        </main>
+
+        <Footer />
       </body>
     </html>
   );

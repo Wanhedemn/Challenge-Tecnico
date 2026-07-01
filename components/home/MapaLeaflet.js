@@ -25,7 +25,7 @@ const iconoDonacion = new L.Icon({
 const BUENOS_AIRES = { lat: -34.6037, lng: -58.3816 };
 const ZOOM_INICIAL = 12;
 
-export default function MapaLeaflet({ centros }) {
+export default function MapaLeaflet({ centros, estadoTriage }) {
   return (
     <MapContainer
       center={[BUENOS_AIRES.lat, BUENOS_AIRES.lng]}
@@ -45,76 +45,61 @@ export default function MapaLeaflet({ centros }) {
           icon={iconoDonacion}
         >
           <Popup
-            maxWidth={280}
+            maxWidth={260}
             className="donavida-popup"
           >
-            <div style={{ fontFamily: 'var(--font-body)', minWidth: '220px' }}>
-              <div
-                className="flex items-start gap-2 mb-2 pb-2"
-                style={{ borderBottom: '1px solid #E2E8F0' }}
+            <div className="flex flex-col space-y-1 max-w-xs" style={{ fontFamily: 'var(--font-body)' }}>
+              {/* Título */}
+              <p 
+                className="text-sm font-bold leading-snug mb-1" 
+                style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-navy)' }}
               >
-                <Building2 size={20} style={{ color: '#0F1D2E', flexShrink: 0 }} aria-hidden="true" />
-                <div>
-                  <p
-                    className="font-bold text-sm leading-tight"
-                    style={{ fontFamily: 'var(--font-heading)', color: '#0F1D2E' }}
-                  >
-                    {centro.nombre}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: '#718096' }}>
-                    {centro.direccion}
-                  </p>
+                {centro.nombre}
+              </p>
+
+              {/* Dirección */}
+              <p className="text-xs" style={{ color: 'var(--color-slate-mid)' }}>
+                <span className="font-semibold" style={{ color: 'var(--color-slate)' }}>Dirección:</span> {centro.direccion}
+              </p>
+
+              {/* Atención */}
+              <p className="text-xs" style={{ color: 'var(--color-slate-mid)' }}>
+                <span className="font-semibold" style={{ color: 'var(--color-slate)' }}>Atención:</span> {centro.horario || 'Lunes a Viernes 08:00 - 13:00'}
+              </p>
+
+              {/* Línea separadora compacta */}
+              <hr className="my-1 border-gray-200" />
+
+              {/* Tipo de sangre */}
+              <div>
+                <p className="text-[11px] font-semibold mb-1" style={{ color: 'var(--color-slate)' }}>
+                  Tipo de sangre:
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {centro.grupos_compatibles?.map((grupo) => (
+                    <span
+                      key={grupo}
+                      className="px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                      style={{
+                        backgroundColor: 'var(--color-primary-blush)',
+                        color: 'var(--color-primary)',
+                        fontFamily: 'var(--font-heading)',
+                        border: '1px solid var(--color-primary-light)',
+                      }}
+                    >
+                      {grupo}
+                    </span>
+                  ))}
                 </div>
               </div>
 
-              {centro.descripcion && (
-                <p className="text-xs mb-2" style={{ color: '#4A5568', lineHeight: '1.5' }}>
-                  {centro.descripcion}
-                </p>
-              )}
-
-              <div className="flex flex-col gap-0.5 mb-3">
-                {centro.horario && (
-                  <p className="text-xs flex items-center gap-1" style={{ color: '#718096' }}>
-                    <Clock size={12} aria-hidden="true" /> {centro.horario}
-                  </p>
-                )}
-                {centro.telefono && (
-                  <p className="text-xs flex items-center gap-1" style={{ color: '#718096' }}>
-                    <Phone size={12} aria-hidden="true" /> {centro.telefono}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-1 mb-3">
-                {centro.grupos_compatibles.map((grupo) => (
-                  <span
-                    key={grupo}
-                    className="inline-block px-2 py-0.5 rounded-full text-xs font-bold"
-                    style={{
-                      backgroundColor: '#FDE8EB',
-                      color: '#C0152A',
-                      fontFamily: 'var(--font-heading)',
-                    }}
-                  >
-                    {grupo}
-                  </span>
-                ))}
-              </div>
-
+              {/* Botón */}
               <a
-                href={`/reservar?centro_id=${centro.id}`}
-                className="block w-full text-center text-xs font-bold py-2 px-3 rounded-lg transition-all duration-150"
-                style={{
-                  backgroundColor: '#C0152A',
-                  color: '#FFFFFF',
-                  textDecoration: 'none',
-                  fontFamily: 'var(--font-heading)',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#A01022')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#C0152A')}
+                href={estadoTriage === 'apto' ? `/reservar?centro_id=${centro.id}` : '/triage'}
+                className="block mt-2 bg-red-600 hover:bg-red-700 text-white font-medium text-xs rounded-lg px-4 py-2 w-full text-center transition-colors"
+                style={{ textDecoration: 'none' }}
               >
-                Agendar turno →
+                {estadoTriage === 'apto' ? 'Agendar turno →' : 'Hacer Pre-Triage →'}
               </a>
             </div>
           </Popup>

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Suspense } from 'react';
 import { AlertTriangle, PartyPopper, Building2, MapPin, Clock, Phone } from 'lucide-react';
+import ResumenReserva from '@/components/reservas/ResumenReserva';
 
 function formatFecha(isoString) {
   return new Date(isoString).toLocaleDateString('es-AR', {
@@ -19,11 +20,18 @@ function formatHora(isoString) {
   });
 }
 
-// datetime-local requiere formato 'YYYY-MM-DDTHH:MM'. La fecha mínima es dentro de 1 hora.
+// Horarios disponibles (intervalos de 30 minutos)
+const HORARIOS = [
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+  '17:00', '17:30', '18:00'
+];
+
 function minFechaISO() {
   const d = new Date();
-  d.setHours(d.getHours() + 1, 0, 0, 0);
-  return d.toISOString().slice(0, 16);
+  d.setDate(d.getDate() + 1); // A partir de mañana
+  return d.toISOString().split('T')[0]; // Formato YYYY-MM-DD
 }
 
 function ReservaForm() {
@@ -33,11 +41,13 @@ function ReservaForm() {
 
   const [centro,     setCentro]     = useState(null);
   const [triage,     setTriage]     = useState(undefined);
-  const [fechaTurno, setFechaTurno] = useState('');
+  const [fecha,      setFecha]      = useState('');
+  const [hora,       setHora]       = useState('');
   const [notas,      setNotas]      = useState('');
   const [status,     setStatus]     = useState('idle');
   const [errorMsg,   setErrorMsg]   = useState('');
   const [pageReady,  setPageReady]  = useState(false);
+  const [showResumen, setShowResumen] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -77,16 +87,23 @@ function ReservaForm() {
     init();
   }, [centroId, router]);
 
-  async function handleSubmit(e) {
+  function handleOpenResumen(e) {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!fechaTurno) {
+    if (!fecha || !hora) {
       setErrorMsg('Seleccioná una fecha y hora para el turno.');
       return;
     }
+    
+    setShowResumen(true);
+  }
 
+  async function handleConfirmReserva() {
     setStatus('loading');
+    
+    // Armar el ISO string combinando fecha y hora locales
+    const fechaHoraStr = `${fecha}T${hora}:00`;
 
     try {
       const res = await fetch('/api/turnos', {
@@ -94,7 +111,7 @@ function ReservaForm() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           centro_id:   centroId,
-          fecha_turno: new Date(fechaTurno).toISOString(),
+          fecha_turno: new Date(fechaHoraStr).toISOString(),
           notas:       notas || undefined,
         }),
       });
@@ -162,7 +179,7 @@ function ReservaForm() {
         </p>
         <p className="text-sm mb-6"
           style={{ fontFamily: 'var(--font-body)', color: 'var(--color-slate)' }}>
-          {fechaTurno && `${formatFecha(fechaTurno)} a las ${formatHora(fechaTurno)}`}
+          {fecha && hora && `${formatFecha(fecha + 'T12:00:00')} a las ${hora} hs`}
         </p>
         <Link href="/dashboard" className="btn btn-primary">
           Ver mis turnos en el panel
@@ -254,7 +271,7 @@ function ReservaForm() {
       )}
 
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleOpenResumen}
         noValidate
         className="card animate-fade-up"
         style={{ animationDelay: '60ms' }}
@@ -274,70 +291,84 @@ function ReservaForm() {
           </div>
         )}
 
-        <div className="flex flex-col gap-5">
-          <div className="form-group">
+        <div className="flex gap-4">
+          <div className="form-group flex-1">
             <label htmlFor="fecha-turno" className="form-label">
-              Fecha y hora del turno
+              Fecha del turno
             </label>
             <input
               id="fecha-turno"
-              type="datetime-local"
+              type="date"
               className="form-input"
               min={minFechaISO()}
-              value={fechaTurno}
-              onChange={(e) => setFechaTurno(e.target.value)}
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
               disabled={!isApto || isLoading}
               required
               aria-required="true"
             />
-            <p className="mt-1 text-xs" style={{ color: 'var(--color-slate-mid)', fontFamily: 'var(--font-body)' }}>
-              Respetá el horario de atención del centro: {centro?.horario || 'consultá con el centro'}
-            </p>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="notas-turno" className="form-label">
-              Notas (opcional)
+          <div className="form-group flex-1">
+            <label htmlFor="hora-turno" className="form-label">
+              Hora
             </label>
-            <textarea
-              id="notas-turno"
-              className="form-input"
-              rows={3}
-              placeholder="Ej: Primera donación, necesito asistencia especial…"
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
+            <select
+              id="hora-turno"
+              className="form-select"
+              value={hora}
+              onChange={(e) => setHora(e.target.value)}
               disabled={!isApto || isLoading}
-              style={{ resize: 'vertical' }}
-            />
+              required
+              aria-required="true"
+            >
+              <option value="" disabled>Seleccioná horario</option>
+              {HORARIOS.map((h) => (
+                <option key={h} value={h}>{h}</option>
+              ))}
+            </select>
           </div>
         </div>
+        
+        <p className="mt-1 mb-4 text-xs" style={{ color: 'var(--color-slate-mid)', fontFamily: 'var(--font-body)' }}>
+          Respetá el horario de atención del centro: {centro?.horario || 'consultá con el centro'}
+        </p>
 
-        <div className="mt-8 flex flex-col sm:flex-row gap-3">
-          <button
-            type="submit"
+        <div className="form-group mb-8">
+          <label htmlFor="notas-turno" className="form-label">
+            Notas (opcional)
+          </label>
+          <textarea
+            id="notas-turno"
+            className="form-input resize-y min-h-[80px]"
+            placeholder="Algún comentario o necesidad especial para el centro…"
+            value={notas}
+            onChange={(e) => setNotas(e.target.value)}
             disabled={!isApto || isLoading}
-            className="btn btn-primary flex-1"
-            style={(!isApto || isLoading) ? { opacity: 0.5, cursor: 'not-allowed', transform: 'none' } : {}}
-            title={!isApto ? 'Completá el pre-triage para habilitar esta opción' : ''}
-          >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-                Reservando…
-              </>
-            ) : (
-              'Confirmar reserva'
-            )}
-          </button>
-          <Link href="/dashboard" className="btn btn-ghost">
-            Cancelar
-          </Link>
+            rows={3}
+          />
         </div>
+
+        <button
+          type="submit"
+          className="btn btn-primary w-full"
+          disabled={!isApto || isLoading || !fecha || !hora}
+          style={(!isApto || isLoading || !fecha || !hora) ? { opacity: 0.6, cursor: 'not-allowed', transform: 'none' } : {}}
+        >
+          {isLoading ? 'Procesando…' : 'Revisar y agendar turno'}
+        </button>
       </form>
 
+      {showResumen && (
+        <ResumenReserva 
+          centro={centro}
+          fecha={fecha}
+          hora={hora}
+          loading={isLoading}
+          onConfirm={handleConfirmReserva}
+          onCancel={() => setShowResumen(false)}
+        />
+      )}
     </div>
   );
 }

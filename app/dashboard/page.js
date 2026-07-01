@@ -6,13 +6,13 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import MapaDonacion from '@/components/home/MapaDonacion';
 import MisTurnos from '@/components/dashboard/MisTurnos';
-import { 
-  AlertTriangle, 
-  CheckCircle2, 
-  XCircle, 
-  Droplet, 
-  ClipboardList, 
-  Map as MapIcon 
+import {
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Droplet,
+  ClipboardList,
+  Map as MapIcon
 } from 'lucide-react';
 
 function TriageBanner({ triage, onIrATriage }) {
@@ -41,7 +41,7 @@ function TriageBanner({ triage, onIrATriage }) {
   }
 
   const isApto = triage.resultado === 'apto';
-  const fecha  = new Date(triage.created_at).toLocaleDateString('es-AR', {
+  const fecha = new Date(triage.created_at).toLocaleDateString('es-AR', {
     day: '2-digit', month: 'long', year: 'numeric',
   });
 
@@ -115,11 +115,11 @@ function PageSpinner() {
 export default function DashboardPage() {
   const router = useRouter();
 
-  const [usuario,      setUsuario]      = useState(null);
-  const [triage,       setTriage]       = useState(undefined);
-  const [turnos,       setTurnos]       = useState([]);
+  const [usuario, setUsuario] = useState(null);
+  const [triage, setTriage] = useState(undefined);
+  const [turnos, setTurnos] = useState([]);
   const [loadingTurnos, setLoadingTurnos] = useState(true);
-  const [pageLoading,  setPageLoading]  = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     async function inicializar() {
@@ -150,7 +150,7 @@ export default function DashboardPage() {
 
         setUsuario(
           perfilRes.error
-            ? { nombre: user.email, email: user.email, grupo_sanguineo: null }
+            ? { nombre: null, email: user.email, grupo_sanguineo: null }
             : perfilRes.data
         );
         setTriage(triageRes.error ? null : triageRes.data);
@@ -172,7 +172,7 @@ export default function DashboardPage() {
     async function cargarTurnos() {
       setLoadingTurnos(true);
       try {
-        const res  = await fetch('/api/turnos');
+        const res = await fetch('/api/turnos');
         const data = await res.json();
 
         if (!res.ok) {
@@ -190,15 +190,6 @@ export default function DashboardPage() {
 
     cargarTurnos();
   }, []);
-
-  async function handleLogout() {
-    try {
-      await supabase.auth.signOut();
-      router.push('/login');
-    } catch (err) {
-      console.error('[Dashboard] Error al cerrar sesión:', err);
-    }
-  }
 
   function irATriage() {
     router.push('/triage');
@@ -224,8 +215,8 @@ export default function DashboardPage() {
     }
   }
 
-  const esApto        = triage?.resultado === 'apto';
-  const sinTriage     = triage === null;
+  const esApto = triage?.resultado === 'apto';
+  const sinTriage = triage === null;
   const puedeReservar = esApto;
   const turnosActivos = turnos.filter((t) => t.estado !== 'cancelado').length;
 
@@ -239,21 +230,15 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-extrabold"
               style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-navy)' }}>
-              Hola, {usuario?.nombre?.split(' ')[0] || 'Donante'} 👋
+              Hola, {usuario?.nombre ? usuario.nombre.split(' ')[0] : 'Donante'}
             </h1>
             <p className="mt-1 text-sm"
               style={{ fontFamily: 'var(--font-body)', color: 'var(--color-slate)' }}>
               Bienvenido a tu panel de donaciones DonaVida.
             </p>
           </div>
-          <button onClick={handleLogout} className="btn btn-outline btn-sm self-start sm:self-auto">
-            Cerrar sesión
-          </button>
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '40ms' }}>
-          <TriageBanner triage={triage} onIrATriage={irATriage} />
-        </div>
 
         <div
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-up"
@@ -264,10 +249,17 @@ export default function DashboardPage() {
               style={{ color: 'var(--color-slate-mid)', fontFamily: 'var(--font-heading)' }}>
               Grupo sanguíneo
             </p>
-            <p className="text-3xl font-extrabold"
-              style={{ color: 'var(--color-primary)', fontFamily: 'var(--font-heading)' }}>
-              {usuario?.grupo_sanguineo || '—'}
-            </p>
+            {usuario?.grupo_sanguineo ? (
+              <p className="text-3xl font-extrabold"
+                style={{ color: 'var(--color-primary)', fontFamily: 'var(--font-heading)' }}>
+                {usuario.grupo_sanguineo}
+              </p>
+            ) : (
+              <p className="text-sm font-medium mt-2"
+                style={{ color: 'var(--color-slate-mid)', fontFamily: 'var(--font-body)' }}>
+                No configurado
+              </p>
+            )}
           </div>
 
           <div className="card-flat p-5">
@@ -281,32 +273,73 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="card-flat p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider mb-2"
-              style={{ color: 'var(--color-slate-mid)', fontFamily: 'var(--font-heading)' }}>
-              Estado de aptitud
-            </p>
-            <span
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
-              style={{
-                fontFamily: 'var(--font-heading)',
-                backgroundColor: sinTriage
-                  ? 'var(--color-warning-light)'
+          <div
+            className="card-flat p-5 flex flex-col justify-between gap-3"
+            style={{
+              backgroundColor: sinTriage
+                ? '#FEF9C3'
+                : esApto
+                  ? '#DCFCE7'
+                  : '#FEE2E2',
+              borderColor: sinTriage ? '#FCD34D' : esApto ? '#86EFAC' : '#FCA5A5',
+            }}
+          >
+            <div>
+              <p
+                className="text-xs font-semibold uppercase tracking-wider mb-2"
+                style={{
+                  color: sinTriage ? '#92400E' : esApto ? '#166534' : '#991B1B',
+                  fontFamily: 'var(--font-heading)',
+                }}
+              >
+                Estado de aptitud
+              </p>
+              <span
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  backgroundColor: sinTriage ? '#FCD34D' : esApto ? '#86EFAC' : '#FCA5A5',
+                  color: sinTriage ? '#78350F' : esApto ? '#14532D' : '#7F1D1D',
+                }}
+              >
+                {sinTriage
+                  ? <><AlertTriangle size={14} /> Sin triage</>
                   : esApto
-                    ? 'var(--color-success-light)'
-                    : 'var(--color-error-light)',
-                color: sinTriage
-                  ? 'var(--color-warning)'
-                  : esApto
-                    ? 'var(--color-success)'
-                    : 'var(--color-error)',
-              }}
-            >
-              {sinTriage ? <><AlertTriangle size={14}/> Sin triage</> : esApto ? <><CheckCircle2 size={14}/> Apto</> : <><XCircle size={14}/> No apto</>}
-            </span>
+                    ? <><CheckCircle2 size={14} /> Apto</>
+                    : <><XCircle size={14} /> No apto</>
+                }
+              </span>
+            </div>
+
+            {/* CTA integrado en la tarjeta */}
+            {sinTriage && (
+              <button
+                onClick={irATriage}
+                className="text-xs font-bold mt-1 underline underline-offset-2 text-left"
+                style={{ color: '#92400E', fontFamily: 'var(--font-heading)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                Completar Pre-Triage →
+              </button>
+            )}
+            {!sinTriage && !esApto && (
+              <button
+                onClick={irATriage}
+                className="text-xs font-bold mt-1 underline underline-offset-2 text-left"
+                style={{ color: '#991B1B', fontFamily: 'var(--font-heading)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                Repetir Pre-Triage →
+              </button>
+            )}
+            {esApto && (
+              <p className="text-xs mt-1" style={{ color: '#166534', fontFamily: 'var(--font-body)' }}>
+                Podés reservar turnos de donación.
+              </p>
+            )}
           </div>
         </div>
 
+        {/* Fin de la grilla de 3 tarjetas. Las secciones siguientes son hermanas (siblings) del grid. */}
+        
         <div className="card animate-fade-up" style={{ animationDelay: '120ms' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div>
@@ -317,7 +350,7 @@ export default function DashboardPage() {
               <p className="text-sm"
                 style={{ fontFamily: 'var(--font-body)', color: 'var(--color-slate)' }}>
                 {puedeReservar
-                  ? 'Tu pre-triage está aprobado. Elegí un centro en el mapa y agendá tu fecha.'
+                  ? 'Tu pre-triage está aprobado. Elegí un centro en el mapa y agendag tu fecha.'
                   : sinTriage
                     ? 'Completá el pre-triage para habilitar la reserva de turnos.'
                     : 'Cuando tus condiciones cambien, podrás repetir el pre-triage.'}
@@ -370,30 +403,14 @@ export default function DashboardPage() {
         </div>
 
         <div id="mapa-donacion" className="animate-fade-up" style={{ animationDelay: '180ms' }}>
-          {esApto ? (
-            <MapaDonacion grupoSanguineo={usuario?.grupo_sanguineo} />
-          ) : (
-            <div className="card text-center py-12">
-              <div className="flex justify-center mb-3">
-                <MapIcon size={32} color="var(--color-slate-mid)" aria-hidden="true" />
-              </div>
-              <h3 className="text-lg font-bold mb-2"
-                style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-navy)' }}>
-                Mapa de centros
-              </h3>
-              <p className="text-sm mb-6 max-w-xs mx-auto"
-                style={{ fontFamily: 'var(--font-body)', color: 'var(--color-slate)' }}>
-                El mapa de centros compatibles se mostrará una vez que completes
-                y apruebes el pre-triage.
-              </p>
-              <button onClick={irATriage} className="btn btn-primary btn-sm">
-                Ir al Pre-Triage →
-              </button>
-            </div>
-          )}
+          <MapaDonacion
+            grupoSanguineo={usuario?.grupo_sanguineo}
+            estadoTriage={triage?.resultado}
+          />
         </div>
 
       </div>
     </div>
   );
 }
+

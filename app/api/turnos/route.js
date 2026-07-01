@@ -11,7 +11,7 @@ async function getAuthUser() {
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: () => {},
+        setAll: () => { },
       },
     }
   );
@@ -29,15 +29,23 @@ async function getAuthUser() {
  *   4. User has an 'apto' triage result
  *   5. No duplicate booking on the same day at the same centro
  *
- * Returns 201 { turno } | 400 | 401 | 409 | 422 | 500
+ * Respuestas:
+ *   201 → { turno: { id, usuario_id, centro_id, fecha_turno, estado, estado_triage } }
+ *   400 → { message: string }
+ *   401 → { message: 'No autenticado' }
+ *   409 → { message: 'Ya tenés un turno reservado en ese centro ese día' }
+ *   422 → { message: 'Tu pre-triage indica que no podés donar en este momento' }
+ *   500 → { message: string }
  */
 export async function POST(request) {
   try {
+    // 1. Verificar autenticación
     const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ message: 'No autenticado. Iniciá sesión.' }, { status: 401 });
     }
 
+    // 2. Parsear body
     let body;
     try {
       body = await request.json();
@@ -47,19 +55,23 @@ export async function POST(request) {
 
     const { centro_id, fecha_turno, notas } = body ?? {};
 
+    // Validación básica de campos
     if (!centro_id || typeof centro_id !== 'string') {
       return NextResponse.json({ message: 'El campo centro_id es requerido.' }, { status: 400 });
     }
     if (!fecha_turno || isNaN(new Date(fecha_turno).getTime())) {
       return NextResponse.json({ message: 'La fecha del turno no es válida.' }, { status: 400 });
     }
+
+    // Validar que la fecha sea futura
     if (new Date(fecha_turno) <= new Date()) {
       return NextResponse.json({ message: 'La fecha del turno debe ser futura.' }, { status: 400 });
     }
 
+    // 3. Verificar que el centro existe y está activo
     const { data: centro, error: centroError } = await supabaseAdmin
       .from('centros_donacion')
-      .select('id, activo')
+      .select('id, nombre, activo')
       .eq('id', centro_id)
       .maybeSingle();
 
@@ -70,16 +82,17 @@ export async function POST(request) {
       return NextResponse.json({ message: 'El centro de donación no está activo actualmente.' }, { status: 400 });
     }
 
+    // 4. Verificar triage 'apto' vigente
     const { data: triage, error: triageError } = await supabaseAdmin
       .from('triage_results')
-      .select('resultado')
+      .select('id, resultado, created_at')
       .eq('usuario_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (triageError) {
-      console.error('[POST /api/turnos] triage query failed:', triageError);
+      console.error('[POST /api/turnos] Error al verificar triage:', triageError);
       return NextResponse.json({ message: 'Error al verificar tu aptitud médica.' }, { status: 500 });
     }
 
@@ -117,35 +130,36 @@ export async function POST(request) {
       );
     }
 
+    // 6. Insertar el turno
     const { data: turno, error: insertError } = await supabaseAdmin
       .from('turnos')
       .insert({
-        usuario_id:    user.id,
+        usuario_id: user.id,
         centro_id,
-        fecha_turno:   new Date(fecha_turno).toISOString(),
-        estado:        'pendiente',
-        estado_triage: 'aprobado', // snapshot del triage al momento de reservar
-        notas:         notas?.trim() || null,
+        fecha_turno: new Date(fecha_turno).toISOString(),
+        estado: 'pendiente',
+        estado_triage: 'aprobado',  // snapshot del triage al momento de reservar
+        notas: notas?.trim() || null,
       })
       .select('id, usuario_id, centro_id, fecha_turno, estado, estado_triage, created_at')
       .single();
 
     if (insertError) {
-      console.error('[POST /api/turnos] insert failed:', insertError);
+      console.error('[POST /api/turnos] Error al insertar turno:', insertError);
       return NextResponse.json({ message: 'Error al guardar el turno. Intentá de nuevo.' }, { status: 500 });
     }
 
     return NextResponse.json({ turno }, { status: 201 });
 
-  } catch (err) {
-    console.error('[POST /api/turnos] unexpected error:', err);
+  } catch (unexpectedError) {
+    console.error('[POST /api/turnos] Error inesperado:', unexpectedError);
     return NextResponse.json({ message: 'Error interno del servidor.' }, { status: 500 });
   }
 }
 
 /**
- * GET /api/turnos
- * Returns the authenticated user's bookings joined with centros_donacion, sorted by date asc.
+ * Devuelve los turnos del usuario autenticado, ordenados por fecha descendente.
+ * Incluye el join con centros_donacion para mostrar nombre y dirección.
  */
 export async function GET() {
   try {
@@ -175,8 +189,8 @@ export async function GET() {
 
     return NextResponse.json({ turnos: data }, { status: 200 });
 
-  } catch (err) {
-    console.error('[GET /api/turnos] unexpected error:', err);
+  } catch (unexpectedError) {
+    console.error('[GET /api/turnos] Error inesperado:', unexpectedError);
     return NextResponse.json({ message: 'Error interno del servidor.' }, { status: 500 });
   }
 }
